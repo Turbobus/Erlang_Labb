@@ -7,6 +7,7 @@
 % - Function F is the body of the server:
 %   - takes 2 params : state, request message
 %   - returns a tuple: new state, response message
+
 start(Atom, State, F) ->
   Pid = spawn(fun() -> loop(State, F) end),
   catch(unregister(Atom)),
@@ -19,21 +20,19 @@ stop(Atom) ->
   ok.
 
 loop(State, F) ->
-  receive
-    {request, From, Ref, Data} ->
-      case catch(F(State, Data)) of
+  receive {request, From, Ref, Data} -> case catch(F(State, Data)) of
         {'EXIT', Reason} ->
-          From!{exit, Ref, Reason},
-          loop(State, F);
+            From ! {exit, Ref, Reason},
+            loop(State, F);
         {reply, R, NewState} ->
-          From!{result, Ref, R},
-          loop(NewState, F)
+            From ! {result, Ref, R},
+            loop(NewState, F)
         end;
     {update, From, Ref, NewF} ->
-      From ! {ok, Ref},
-      loop(State, NewF);
+        From ! {ok, Ref},
+        loop(State, NewF);
     stop ->
-      true
+        true
   end.
 
 % Send a request to a Pid and wait for a response
