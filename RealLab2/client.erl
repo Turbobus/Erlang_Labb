@@ -6,7 +6,8 @@
 -record(client_st, {
     gui, % atom of the GUI process
     nick, % nick/username of the client
-    server % atom of the chat server
+    server, % atom of the chat server
+    joinedChannels
 }).
 
 % Return an initial state record. This is called from GUI.
@@ -15,7 +16,8 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
     #client_st{
         gui = GUIAtom,
         nick = Nick,
-        server = ServerAtom
+        server = ServerAtom,
+        joinedChannels = []
     }.
 
 % handle/2 handles each kind of request from GUI
@@ -29,9 +31,25 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 % Join channel
 handle(St, {join, Channel}) ->
     % TODO: Implement this function
-        io:fwrite(Channel),
+    %io:fwrite(St#client_st.server),
+    %io:fwrite(Channel),
+    %io:fwrite(self()),
+    
+    Result = (catch(genserver:request(St#client_st.server, {join, Channel, self()}))),
+    %{reply, ok, St#client_st{joinedChannels = lists:append(Channel,St#client_st.joinedChannels)}};
+    
+    io:fwrite("HMMMMMM\n"),
+    io:fwrite("~p~n", [Result]),
 
-    {reply, ok, St};
+    %result = sucess,
+    case Result of
+        sucess -> {reply, ok, St#client_st{joinedChannels = lists:append(Channel,St#client_st.joinedChannels)}};
+        failed -> {reply, {error, user_already_joined, "User already in channel"}, St}
+    end;
+
+
+    
+   % {reply, ok, St};
    % {reply, {error, not_implemented, "join not implemented"}, St} ;
 
 % Leave channel
