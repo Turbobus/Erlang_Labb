@@ -29,8 +29,10 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 % Join channel
 handle(St, {join, Channel}) ->
     % TODO: Implement this function
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "join not implemented"}, St} ;
+        io:fwrite(Channel),
+
+    {reply, ok, St};
+   % {reply, {error, not_implemented, "join not implemented"}, St} ;
 
 % Leave channel
 handle(St, {leave, Channel}) ->

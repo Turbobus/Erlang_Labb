@@ -14,7 +14,7 @@ start(Atom, State, F) ->
   Pid.
 
 stop(Atom) ->
-  Atom!stop,
+  Atom ! stop,
   catch(unregister(Atom)),
   ok.
 
@@ -57,7 +57,7 @@ request(Pid, Data, Timeout) ->
 % Update loop function
 update(Pid, Fun) ->
   Ref = make_ref(),
-  Pid!{update, self(), Ref, Fun},
+  Pid ! {update, self(), Ref, Fun},
   receive
     {ok, Ref} ->
       ok

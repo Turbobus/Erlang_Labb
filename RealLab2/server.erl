@@ -1,7 +1,14 @@
 -module(server).
 -export([start/1,stop/1]).
 
+-record(inState,{
+    channels
+}).
 
+initial_state() ->
+    #inState{
+        channels = []
+    }.
 
 
 % Start a new server process with the given name
@@ -12,12 +19,9 @@ start(ServerAtom) ->
     % - Register this process to ServerAtom
     % - Return the process ID
     
-    ServerID = genserver:start(ServerAtom, [] ,fun handle/2),
-    genserver:request(ServerID, {"HEJ", "DÅ"}),
-    genserver:request(ServerID, {"PÅ", "DÅ"}),
-    genserver:request(ServerID, {"DIG", "DÅ"})
+    ServerID = genserver:start(ServerAtom, initial_state() ,fun handle/2).
+    %genserver:request(ServerID, {"HEJ", "DÅ"});
 
-    .
 
     %Test = spawn(fun() -> loop(ServerAtom) end),
     %self().
@@ -28,11 +32,13 @@ start(ServerAtom) ->
 
 % Join channel
 %handle(St, {_, Channel}) ->
-handle(St, {First, _}) ->
+handle(St, {join, Channel}) ->
     % TODO: Implement this function
-    {reply, First, St}. %;
+    {reply, ok, St};
     %{reply, {error, not_implemented, "Test"}, St}.
 
+handle(St, _) ->
+    {reply, {error, not_implemented, "Not Working"}, St}.
  
 % Stop the server process registered to the given name,
 % together with any other associated processes
