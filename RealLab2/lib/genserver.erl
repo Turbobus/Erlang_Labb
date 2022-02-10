@@ -21,17 +21,17 @@ stop(Atom) ->
 loop(State, F) ->
   receive {request, From, Ref, Data} -> case catch(F(State, Data)) of
         {'EXIT', Reason} ->
-          From ! {exit, Ref, Reason},
-          loop(State, F);
+            From ! {exit, Ref, Reason},
+            loop(State, F);
         {reply, R, NewState} ->
-          From ! {result, Ref, R},
-          loop(NewState, F)
+            From ! {result, Ref, R},
+            loop(NewState, F)
         end;
     {update, From, Ref, NewF} ->
-      From ! {ok, Ref},
-      loop(State, NewF);
+        From ! {ok, Ref},
+        loop(State, NewF);
     stop ->
-      true
+        true
   end.
 
 % Send a request to a Pid and wait for a response
@@ -45,13 +45,13 @@ request(Pid, Data, Timeout) ->
   Ref = make_ref(),
   Pid ! {request, self(), Ref, Data},
   receive
-    {result, Ref, Result} ->
-      io:fwrite(Result),
-      Result;
-    {exit, Ref, Reason} ->
-      exit(Reason)
+      {result, Ref, Result} ->
+          io:fwrite(Result),
+          Result;
+      {exit, Ref, Reason} ->
+          exit(Reason)
   after Timeout ->
-    exit("Timeout")
+      exit("Timeout")
   end.
 
 % Update loop function
