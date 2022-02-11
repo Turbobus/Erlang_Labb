@@ -35,34 +35,53 @@ handle(St, {join, Channel}) ->
     %io:fwrite(Channel),
     %io:fwrite(self()),
     
+    
     Result = (catch(genserver:request(St#client_st.server, {join, Channel, self()}))),
     %{reply, ok, St#client_st{joinedChannels = lists:append(Channel,St#client_st.joinedChannels)}};
     
-    io:fwrite("HMMMMMM\n"),
-    io:fwrite("~p~n", [Result]),
-
     %result = sucess,
-    case Result of
-        sucess -> {reply, ok, St#client_st{joinedChannels = lists:append(Channel,St#client_st.joinedChannels)}};
-        failed -> {reply, {error, user_already_joined, "User already in channel"}, St}
+    case Result of 
+         sucess -> {reply, ok, St#client_st{joinedChannels = [Channel | St#client_st.joinedChannels]}};
+         failed -> {reply, {error, user_already_joined, "User already in channel"}, St}
+    end;
+    
+
+
+% Leave channel
+handle(St, {leave, Channel}) ->             % Look over and see if we can remove joinedChannel dependancy
+    % TODO: Implement this function
+    % {reply, ok, St} ;
+    %ChannelExists = lists:member(list_to_atom(Channel), [registered()]),
+    %io:fwrite("~p~n", [registered()]),
+    %io:fwrite("~p~n", [ChannelExists]),
+    %io:fwrite("~p~n", [list_to_atom(Channel)]),
+
+    ChannelExists = lists:member(Channel, St#client_st.joinedChannels),
+    if ChannelExists ->
+        Result = (catch(genserver:request(list_to_atom(Channel), {leave, self()}))),
+
+        case Result of 
+            sucess -> {reply, ok, St#client_st{joinedChannels = lists:delete(Channel, St#client_st.joinedChannels)}};
+            failed -> {reply, {error, user_not_joined, "User not in channel"}, St}
+        end;
+        true ->
+            {reply, {error, user_not_joined, "User not in channel"}, St}
     end;
 
 
-    
-   % {reply, ok, St};
-   % {reply, {error, not_implemented, "join not implemented"}, St} ;
+    %{reply, {error, not_implemented, "leave not implemented"}, St} ;
 
-% Leave channel
-handle(St, {leave, Channel}) ->
-    % TODO: Implement this function
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "leave not implemented"}, St} ;
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "message sending not implemented"}, St} ;
+
+
+    % See if user is actually in channel
+    genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()});
+
+
 
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)
@@ -79,6 +98,8 @@ handle(St, whoami) ->
 
 % Incoming message (from channel, to GUI)
 handle(St = #client_st{gui = GUI}, {message_receive, Channel, Nick, Msg}) ->
+    io:fwrite("~p~n", [St]),
+    io:fwrite("~p~n", ["In message handler"]),
     gen_server:call(GUI, {message_receive, Channel, Nick++"> "++Msg}),
     {reply, ok, St} ;
 

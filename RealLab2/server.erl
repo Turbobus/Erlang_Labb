@@ -30,54 +30,34 @@ start(ServerAtom) ->
 
 
 
-% Join channel
+% Join a channel
 
 handle(St, {join, Channel, User}) ->
-    % TODO: Implement this function
-    %io:fwrite("In join handle"),
+
     ChannelInList = lists:member(Channel, St#inState.channels),   
-  
-    io:fwrite("~p~n", [St#inState.channels]),
-    io:fwrite("~p~n", [Channel]),
-    io:fwrite("~p~n", [ChannelInList]),
-    
 
     if ChannelInList ->
         % If channel exists, add client to channel
-        %genserver:start(list_to_atom(Channel),[User], fun channelHandler/2),
 
         Response = genserver:request(list_to_atom(Channel), {join, User}),
-        io:fwrite("In Wrong if\n"),
-        io:fwrite("~p~n", [Response]),
         case Response of
             sucess -> {reply, sucess, St};   
             failed -> {reply, failed, St}
         end;
         true ->
-            io:fwrite("In if\n"),
         % If channel does not exist, create one and add client to channel
             genserver:start(list_to_atom(Channel), [User], fun channelHandler/2),
-
-            % Hur vi hade skrivit
-            %{reply, sucess, St#inState{channels = lists:append(Channel, St#inState.channels)}},
-            
-            % Båda dessa verkar fungera
-            %{reply, sucess, St#inState{channels = lists:append([Channel], St#inState.channels)}}, % append() == ++
-            {reply, sucess, St#inState{channels = [Channel | St#inState.channels]}}               % använder "cons" => |
-           
+            {reply, sucess, St#inState{channels = [Channel | St#inState.channels]}}     
     end;
-   
 
-    
-    %{reply, {error, not_implemented, "Test"}, St}.
 
 
 handle(St, _) ->
     {reply, {error, not_implemented, "Not Working"}, St}.
  
+% Join a channel
 channelHandler(Users, {join, User}) ->
     UserInChannel = lists:member(User, Users),
-    io:fwrite("~p~n", [Users]),
 
     if UserInChannel ->
            io:fwrite("User in channel"),
@@ -86,10 +66,43 @@ channelHandler(Users, {join, User}) ->
            io:fwrite("User not in channel"),
            %{reply, sucess, lists:append(User,Users)}
            {reply, sucess, [User | Users]}
-    end.
+    end;
     
+% Leave a channel
+channelHandler(Users, {leave, User}) ->
+    io:fwrite("In Channel handler\n"),
+    io:fwrite("~p~n", [Users]),
+
+    UserInChannel = lists:member(User, Users),
+
+    if UserInChannel ->
+           io:fwrite("User in channel"),
+           {reply, sucess, lists:delete(User, Users)};
+           
+        true ->
+           io:fwrite("User not in channel"),
+           {reply, failed, Users}
+    end;
     
+channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
+    io:fwrite("In Channel handler for message\n"),
+    io:fwrite("~p~n", [registered()]),
+    io:fwrite("~p~n", [Users]),
+
+    spawn(fun() -> lists:foreach(fun(To) ->
+                     io:fwrite("~p~n", [To]),
+                     
+                     %To:handle({message_receive, self(), User, Msg})
+                     
+                    genserver:request(To, {message_receive, Channel, Nick, Msg})
+                  
+                 end, Users) end).
+    %lists:map(fun(To)-> sendMessageToClient(Msg, User) end, Users);
+    %genserver:request(list_to_atom(To),{message_receive,self(),User,Msg}).
+
+%sendMessageToClient(Msg, User, To) ->
     
+
     %{reply, {error, not_implemented, "Working"}, Users}.
 
 % Stop the server process registered to the given name,
