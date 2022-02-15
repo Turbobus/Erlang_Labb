@@ -110,7 +110,7 @@ stop(ServerAtom) ->
     % TODO Implement function
     % Return ok
     lists:foreach(fun(Channel) ->
-                    genserver:stop(Channel)
+                    genserver:stop(list_to_atom(Channel))
                     end, #inState.channels), 
 
     genserver:stop(ServerAtom).
