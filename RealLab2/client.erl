@@ -35,14 +35,16 @@ handle(St, {join, Channel}) ->
     %io:fwrite(Channel),
     %io:fwrite(self()),
     
-    
-    Result = (catch(genserver:request(St#client_st.server, {join, Channel, self()}))),
-    %{reply, ok, St#client_st{joinedChannels = lists:append(Channel,St#client_st.joinedChannels)}};
-    
-    %result = sucess,
-    case Result of 
-         sucess -> {reply, ok, St#client_st{joinedChannels = [Channel | St#client_st.joinedChannels]}};
-         failed -> {reply, {error, user_already_joined, "User already in channel"}, St}
+    % Check if server is registered 
+    case lists:member(St#client_st.server, registered()) of
+        % If server is registered, send a request to join it
+        true -> Result = (catch(genserver:request(St#client_st.server, {join, Channel, self()}))),
+                case Result of 
+                    sucess -> {reply, ok, St#client_st{joinedChannels = [Channel | St#client_st.joinedChannels]}};
+                    failed -> {reply, {error, user_already_joined, "User already in channel"}, St}
+                end;
+        % If server is not registered, reply an error
+        false -> {reply, {error, server_not_reached, "Server does not respond"}, St}
     end;
     
 
@@ -51,12 +53,12 @@ handle(St, {join, Channel}) ->
 handle(St, {leave, Channel}) ->             % Look over and see if we can remove joinedChannel dependancy
     % TODO: Implement this function
     % {reply, ok, St} ;
-    %ChannelExists = lists:member(list_to_atom(Channel), [registered()]),
+    ChannelExists = lists:member(list_to_atom(Channel), registered()),
     %io:fwrite("~p~n", [registered()]),
     %io:fwrite("~p~n", [ChannelExists]),
     %io:fwrite("~p~n", [list_to_atom(Channel)]),
 
-    ChannelExists = lists:member(Channel, St#client_st.joinedChannels),
+    %ChannelExists = lists:member(Channel, St#client_st.joinedChannels),
     if ChannelExists ->
         Result = (catch(genserver:request(list_to_atom(Channel), {leave, self()}))),
 
@@ -80,7 +82,9 @@ handle(St, {message_send, Channel, Msg}) ->
 
     case Result of
         ok -> {reply,ok,St};
-        failed -> {reply, {error, user_not_joined, "User not in Channel"}, St}
+        failed -> {reply, {error, user_not_joined, "User not in Channel"}, St};
+        exit -> {reply, {error, server_not_reached, "Server does not respond"}, St}
+        
     end;
 
 
