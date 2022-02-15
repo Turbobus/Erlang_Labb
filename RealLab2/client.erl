@@ -84,7 +84,7 @@ handle(St, {message_send, Channel, Msg}) ->
     case Result of
         ok -> {reply,ok,St};
         failed -> {reply, {error, user_not_joined, "User not in Channel"}, St};
-        exit -> {reply, {error, server_not_reached, "Server does not respond"}, St}
+        {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
         
     end;
 
