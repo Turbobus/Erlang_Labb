@@ -41,7 +41,8 @@ handle(St, {join, Channel}) ->
         true -> Result = (catch(genserver:request(St#client_st.server, {join, Channel, self()}))),
                 case Result of 
                     sucess -> {reply, ok, St#client_st{joinedChannels = [Channel | St#client_st.joinedChannels]}};
-                    failed -> {reply, {error, user_already_joined, "User already in channel"}, St}
+                    failed -> {reply, {error, user_already_joined, "User already in channel"}, St};
+                    {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
                 end;
         % If server is not registered, reply an error
         false -> {reply, {error, server_not_reached, "Server does not respond"}, St}
