@@ -52,7 +52,7 @@ handle(St, {join, Channel, User}) ->
 handle(St, stopAllChannels) ->
     lists:foreach(fun(Channel) ->
                     genserver:stop(list_to_atom(Channel))
-                    end, St#inState.channels), 
+                    end, St), 
     {reply,ok,[]};
 
 handle(St, _) ->
