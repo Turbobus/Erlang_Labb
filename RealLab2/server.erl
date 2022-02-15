@@ -49,7 +49,11 @@ handle(St, {join, Channel, User}) ->
             {reply, sucess, St#inState{channels = [Channel | St#inState.channels]}}     
     end;
 
-
+handle(St, stopAllChannels) ->
+    lists:foreach(fun(Channel) ->
+                    genserver:stop(list_to_atom(Channel))
+                    end, St#inState.channels), 
+    {reply,ok,[]};
 
 handle(St, _) ->
     {reply, {error, not_implemented, "Not Working"}, St}.
@@ -102,6 +106,7 @@ channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
 %sendMessageToClient(Msg, User, To) ->
     
 
+
     %{reply, {error, not_implemented, "Working"}, Users}.
 
 % Stop the server process registered to the given name,
@@ -109,9 +114,10 @@ channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
 stop(ServerAtom) ->
     % TODO Implement function
     % Return ok
-    lists:foreach(fun(Channel) ->
-                    genserver:stop(list_to_atom(Channel))
-                    end, [ServerAtom#inState.channels]), 
+    %lists:foreach(fun(Channel) ->
+     %               genserver:stop(list_to_atom(Channel))
+      %              end, [ServerAtom#inState.channels]), 
 
+    genserver:request(ServerAtom, stopAllChannels),
     genserver:stop(ServerAtom).
     %not_implemented.
