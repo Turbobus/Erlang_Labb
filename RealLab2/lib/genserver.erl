@@ -51,6 +51,9 @@ request(Pid, Data, Timeout) ->
       {exit, Ref, Reason} ->
           exit(Reason)
   after Timeout ->
+
+      io:fwrite("In Genserver timeout\n"),
+
       exit("Timeout")
   end.
 

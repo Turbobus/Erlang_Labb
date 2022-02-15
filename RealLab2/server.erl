@@ -31,7 +31,6 @@ start(ServerAtom) ->
 
 
 % Join a channel
-
 handle(St, {join, Channel, User}) ->
 
     ChannelInList = lists:member(Channel, St#inState.channels),   
@@ -70,8 +69,6 @@ channelHandler(Users, {join, User}) ->
     
 % Leave a channel
 channelHandler(Users, {leave, User}) ->
-    io:fwrite("In Channel handler\n"),
-    io:fwrite("~p~n", [Users]),
 
     UserInChannel = lists:member(User, Users),
 
@@ -84,19 +81,21 @@ channelHandler(Users, {leave, User}) ->
            {reply, failed, Users}
     end;
     
+% Send a message
 channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
-    io:fwrite("In Channel handler for message\n"),
-    io:fwrite("~p~n", [registered()]),
-    io:fwrite("~p~n", [Users]),
 
-    spawn(fun() -> lists:foreach(fun(To) ->
-                     io:fwrite("~p~n", [To]),
-                     
-                     %To:handle({message_receive, self(), User, Msg})
-                     
-                    genserver:request(To, {message_receive, Channel, Nick, Msg})
-                  
-                 end, Users) end).
+    case lists:member(User,Users) of
+        true -> spawn(fun() -> lists:foreach(fun(To) ->
+                                if To /= User ->
+                                    genserver:request(To, {message_receive, Channel, Nick, Msg});
+                                    true -> ok
+                                end
+                            
+                            end, Users) end),
+                            {reply, ok, Users};
+
+        false -> {reply, failed, Users}
+    end.
     %lists:map(fun(To)-> sendMessageToClient(Msg, User) end, Users);
     %genserver:request(list_to_atom(To),{message_receive,self(),User,Msg}).
 

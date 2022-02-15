@@ -75,12 +75,13 @@ handle(St, {leave, Channel}) ->             % Look over and see if we can remove
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
-    % {reply, ok, St} ;
+   
+    Result = genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}),
 
-
-    % See if user is actually in channel
-    genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()});
-
+    case Result of
+        ok -> {reply,ok,St};
+        failed -> {reply, {error, user_not_joined, "User not in Channel"}, St}
+    end;
 
 
 % This case is only relevant for the distinction assignment!
