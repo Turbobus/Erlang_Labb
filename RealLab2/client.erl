@@ -55,11 +55,7 @@ handle(St, {leave, Channel}) ->             % Look over and see if we can remove
     % TODO: Implement this function
     % {reply, ok, St} ;
     ChannelExists = lists:member(list_to_atom(Channel), registered()),
-    %io:fwrite("~p~n", [registered()]),
-    %io:fwrite("~p~n", [ChannelExists]),
-    %io:fwrite("~p~n", [list_to_atom(Channel)]),
 
-    %ChannelExists = lists:member(Channel, St#client_st.joinedChannels),
     if ChannelExists ->
         Result = (catch(genserver:request(list_to_atom(Channel), {leave, self()}))),
 
@@ -77,7 +73,8 @@ handle(St, {leave, Channel}) ->             % Look over and see if we can remove
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
-    % TODO: Implement this function
+
+    % Why do we need this?
     case lists:member(list_to_atom(Channel), registered()) of
     
         true -> Result = genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}),
