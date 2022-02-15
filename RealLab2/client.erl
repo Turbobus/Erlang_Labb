@@ -82,8 +82,9 @@ handle(St, {message_send, Channel, Msg}) ->
     Result = genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}),
 
     case Result of
-        ok     -> {reply,ok,St};
-        failed -> {reply, {error, user_not_joined, "User not in Channel"}, St}
+        ok -> {reply,ok,St};
+        failed -> {reply, {error, user_not_joined, "User not in Channel"}, St};
+        {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
     end;
 
 
