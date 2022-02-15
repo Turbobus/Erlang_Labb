@@ -109,9 +109,9 @@ channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
 stop(ServerAtom) ->
     % TODO Implement function
     % Return ok
-    lists:foreach(fun(Channel) ->
-                    genserver:stop(Channel)
-                    end, ServerAtom#inState.channels), 
+    %lists:foreach(fun(Channel) ->
+     %               genserver:stop(Channel)
+      %              end, ServerAtom#inState.channels), 
 
     genserver:stop(ServerAtom).
     %not_implemented.
