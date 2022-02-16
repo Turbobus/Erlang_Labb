@@ -46,7 +46,7 @@ request(Pid, Data, Timeout) ->
   Pid ! {request, self(), Ref, Data},
   receive
       {result, Ref, Result} ->
-          %io:fwrite(Result),
+          io:fwrite(Result),
           Result;
       {exit, Ref, Reason} ->
           exit(Reason)

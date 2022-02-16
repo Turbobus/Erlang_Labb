@@ -17,7 +17,7 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
         gui = GUIAtom,
         nick = Nick,
         server = ServerAtom,
-        joinedChannels = []
+        joinedChannels = []   % Remove ???
     }.
 
 % handle/2 handles each kind of request from GUI
@@ -79,7 +79,7 @@ handle(St, {message_send, Channel, Msg}) ->
     
         true -> Result = genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}),
                 case Result of
-                    ok -> {reply,ok,St};
+                    ok -> {reply, ok, St};
                     failed -> {reply, {error, user_not_joined, "User not in Channel"}, St};
                     {'EXIT',_} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
                 end;
@@ -90,7 +90,13 @@ handle(St, {message_send, Channel, Msg}) ->
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)
 handle(St, {nick, NewNick}) ->
-    {reply, ok, St#client_st{nick = NewNick}} ;
+    Result = (catch(genserver:request(St#client_st.server, {changeNick, NewNick}))),
+
+    case Result of
+        ok     -> {reply, ok, St#client_st{nick = NewNick}};
+        failed -> {reply,{error, nick_taken, "Nick is already taken"},St}
+    end;
+    
 
 % ---------------------------------------------------------------------------
 % The cases below do not need to be changed...

@@ -20,19 +20,11 @@ start(ServerAtom) ->
     % - Return the process ID
     
     genserver:start(ServerAtom, initial_state() ,fun handle/2).
-    %genserver:request(ServerID, {"HEJ", "DÅ"});
-
-
-    %Test = spawn(fun() -> loop(ServerAtom) end),
-    %self().
-    %not_implemented.
-
-
 
 
 % Join a channel
 handle(St, {join, Channel, User}) ->
-
+    io:fwrite("~p~n", [registered()]),
     ChannelInList = lists:member(Channel, St#inState.channels),   
 
     if ChannelInList ->
@@ -53,11 +45,38 @@ handle(St, stopAllChannels) ->
     lists:foreach(fun(Channel) ->
                     genserver:stop(list_to_atom(Channel))
                     end, St#inState.channels), 
-    {reply,ok,[]};
+    {reply, ok, []};
+
+handle(St, {changeNick, NewNick}) ->
+    NickAvailable = lists:all(fun(Channel) ->
+                        genserver:request(list_to_atom(Channel), {checkUserNick, NewNick})
+                    end, St#inState.channels), 
+    
+    %io:fwrite("~p~n", [NickAvailable]),
+    case NickAvailable of
+        true  -> {reply, ok, St};
+        false -> {reply, failed, St}
+    end;
+    
 
 handle(St, _) ->
     {reply, {error, not_implemented, "Not Working"}, St}.
  
+
+channelHandler(Users, {checkUserNick, NewNick}) ->
+    %List = lists:map(fun(OneUser) ->
+    %                genserver:request(OneUser, {whoami})
+    %                end, Users), 
+
+    %NickInChannel = lists:member(NewNick, List),
+     io:fwrite("~p~n", ["In Channel handler for changing name\n"]),
+    case true of
+        true  -> {reply, false, Users};
+        false -> {reply, true, Users}
+    end;
+
+
+
 % Join a channel
 channelHandler(Users, {join, User}) ->
     UserInChannel = lists:member(User, Users),
@@ -89,7 +108,7 @@ channelHandler(Users, {leave, User}) ->
 channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
 
     case lists:member(User,Users) of
-        true -> spawn(fun() -> lists:foreach(fun(To) ->
+        true -> spawn(fun() -> lists:foreach(fun(To) -> % Maybe remove spawn? Or move it into the foreach
                                 if To /= User ->
                                     genserver:request(To, {message_receive, Channel, Nick, Msg});
                                     true -> ok
@@ -99,10 +118,12 @@ channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
                             {reply, ok, Users};
 
         false -> {reply, failed, Users}
-    end.
+    end;
     %lists:map(fun(To)-> sendMessageToClient(Msg, User) end, Users);
     %genserver:request(list_to_atom(To),{message_receive,self(),User,Msg}).
 
+channelHandler(Users, _) ->
+    {reply, {error, not_implemented, "Not Working"}, Users}.
 %sendMessageToClient(Msg, User, To) ->
     
 
