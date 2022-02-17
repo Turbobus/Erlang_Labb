@@ -86,7 +86,7 @@ handle(St, _) ->
 
 
 % Channel server functions
-%-------------------------------------------------------------------------------------------
+%-----------------------------------------------------------------------------------------
 
 % Join a channel
 channelHandler(Users, {join, User}) ->
@@ -121,11 +121,12 @@ channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
     case lists:member(User,Users) of
         % If the user is a member, send a request to all other users in the channel to receive the message
         true -> lists:foreach(fun(To) -> % Maybe remove spawn? Or move it into the foreach
+                                spawn(fun() -> 
                                 if To /= User ->
                                     genserver:request(To, {message_receive, Channel, Nick, Msg});
                                     true -> ok
                                 end
-                            
+                                end)
                             end, Users),
                             {reply, ok, Users};
 
