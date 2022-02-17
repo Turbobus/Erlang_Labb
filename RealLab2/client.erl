@@ -30,7 +30,9 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 handle(St, {join, Channel}) ->
 
     % Check if server is registered 
-    case lists:member(St#client_st.server, registered()) of
+    %case lists:member(St#client_st.server, registered()) of
+
+    case true of
         % If server is registered, send a request to join it
         true -> Result = (catch(genserver:request(St#client_st.server, {join, Channel, self(),St#client_st.nick}))),
                 case Result of 
