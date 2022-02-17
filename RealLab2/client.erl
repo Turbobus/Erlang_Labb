@@ -70,10 +70,11 @@ handle(St, {leave, Channel}) ->
 handle(St, {message_send, Channel, Msg}) ->
 
     % Check if channel is registered/exists
-    case lists:member(list_to_atom(Channel), registered()) of
+    % lists:member(list_to_atom(Channel), registered())
+    case true of
     
         % If channel is registered, send a request to it with a message
-        true -> Result = genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}),
+        true -> Result = (catch (genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}))),
                 case Result of
                     ok -> {reply, ok, St};
                     failed -> {reply, {error, user_not_joined, "User not in Channel"}, St};
@@ -94,7 +95,8 @@ handle(St, {nick, NewNick}) ->
     % If ok, update the nick. Otherise, reply with error
     case Result of
         ok     -> {reply, ok, St#client_st{nick = NewNick}}; 
-        failed -> {reply,{error, nick_taken, "Nick is already taken"},St}
+        failed -> {reply,{error, nick_taken, "Nick is already taken"},St};
+        {'EXIT',_} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
     end;
     
 
