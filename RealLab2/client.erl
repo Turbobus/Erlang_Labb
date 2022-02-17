@@ -38,7 +38,7 @@ handle(St, {join, Channel}) ->
     % Check if server is registered 
     case lists:member(St#client_st.server, registered()) of
         % If server is registered, send a request to join it
-        true -> Result = (catch(genserver:request(St#client_st.server, {join, Channel, self()}))),
+        true -> Result = (catch(genserver:request(St#client_st.server, {join, Channel, self(),St#client_st.nick}))),
                 case Result of 
                     sucess -> {reply, ok, St#client_st{joinedChannels = [Channel | St#client_st.joinedChannels]}};
                     failed -> {reply, {error, user_already_joined, "User already in channel"}, St};
@@ -90,7 +90,7 @@ handle(St, {message_send, Channel, Msg}) ->
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)
 handle(St, {nick, NewNick}) ->
-    Result = (catch(genserver:request(St#client_st.server, {changeNick, NewNick}))),
+    Result = (catch(genserver:request(St#client_st.server, {changeNick, NewNick, St#client_st.nick}))),
 
     case Result of
         ok     -> {reply, ok, St#client_st{nick = NewNick}};
@@ -116,6 +116,7 @@ handle(St = #client_st{gui = GUI}, {message_receive, Channel, Nick, Msg}) ->
 % Quit client via GUI
 handle(St, quit) ->
     % Any cleanup should happen here, but this is optional
+    genserver:request(St#client_st.server, {quitClient, self(), St#client_st.nick}),
     {reply, ok, St} ;
 
 % Catch-all for any unhandled requests

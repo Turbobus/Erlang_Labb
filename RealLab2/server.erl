@@ -2,12 +2,14 @@
 -export([start/1,stop/1]).
 
 -record(inState,{
-    channels
+    channels,
+    nicks
 }).
 
 initial_state() ->
     #inState{
-        channels = [] % Pid to underlying channel procesors 
+        channels = [], % Pid to underlying channel procesors 
+        nicks = []
     }.
 
 
@@ -23,7 +25,7 @@ start(ServerAtom) ->
 
 
 % Join a channel
-handle(St, {join, Channel, User}) ->
+handle(St, {join, Channel, User, Nick}) ->
     io:fwrite("~p~n", [registered()]),
     ChannelInList = lists:member(Channel, St#inState.channels),   
 
@@ -32,13 +34,13 @@ handle(St, {join, Channel, User}) ->
 
         Response = genserver:request(list_to_atom(Channel), {join, User}),
         case Response of
-            sucess -> {reply, sucess, St};   
+            sucess -> {reply, sucess, St#inState{nicks = [Nick | St#inState.nicks]}};   
             failed -> {reply, failed, St}
         end;
         true ->
         % If channel does not exist, create one and add client to channel
             genserver:start(list_to_atom(Channel), [User], fun channelHandler/2),
-            {reply, sucess, St#inState{channels = [Channel | St#inState.channels]}}     
+            {reply, sucess, St#inState{channels = [Channel | St#inState.channels], nicks = [Nick | St#inState.nicks]}}     
     end;
 
 handle(St, stopAllChannels) ->
@@ -47,45 +49,41 @@ handle(St, stopAllChannels) ->
                     end, St#inState.channels), 
     {reply, ok, []};
 
-handle(St, {changeNick, NewNick}) ->
-    NickAvailable = lists:all(fun(Channel) ->
-                        genserver:request(list_to_atom(Channel), {checkUserNick, NewNick})
+handle(St, {changeNick, NewNick, OldNick}) ->
+    AlreadyExist = lists:member(NewNick, St#inState.nicks),
+
+    case AlreadyExist of
+        true  -> {reply, failed, St};
+        false -> {reply, ok, St#inState{nicks = lists:delete(OldNick, [NewNick | St#inState.nicks])}}
+    end;
+
+
+handle(St, {quitClient, User, UserNick})->
+    lists:foreach(fun(Channel) ->
+                    genserver:request(list_to_atom(Channel), {leave, User})
                     end, St#inState.channels), 
     
-    %io:fwrite("~p~n", [NickAvailable]),
-    case NickAvailable of
-        true  -> {reply, ok, St};
-        false -> {reply, failed, St}
-    end;
+    NewNickList = [Nick || Nick <- St#inState.nicks, Nick /= UserNick],
+    {reply, ok, St#inState{nicks = NewNickList}};
+    
+    
     
 
 handle(St, _) ->
     {reply, {error, not_implemented, "Not Working"}, St}.
- 
 
-channelHandler(Users, {checkUserNick, NewNick}) ->
-    %List = lists:map(fun(OneUser) ->
-    %                genserver:request(OneUser, {whoami})
-    %                end, Users), 
-
-    %NickInChannel = lists:member(NewNick, List),
-     io:fwrite("~p~n", ["In Channel handler for changing name\n"]),
-    case true of
-        true  -> {reply, false, Users};
-        false -> {reply, true, Users}
-    end;
-
-
+% Channel server
+%--------------------------------------------------------------------------
 
 % Join a channel
 channelHandler(Users, {join, User}) ->
     UserInChannel = lists:member(User, Users),
 
     if UserInChannel ->
-           io:fwrite("User in channel"),
+           io:fwrite("User in channel\n"),
            {reply, failed, Users};
         true ->
-           io:fwrite("User not in channel"),
+           io:fwrite("User not in channel\n"),
            %{reply, sucess, lists:append(User,Users)}
            {reply, sucess, [User | Users]}
     end;
@@ -96,11 +94,11 @@ channelHandler(Users, {leave, User}) ->
     UserInChannel = lists:member(User, Users),
 
     if UserInChannel ->
-           io:fwrite("User in channel"),
+           io:fwrite("User in channel\n"),
            {reply, sucess, lists:delete(User, Users)};
            
         true ->
-           io:fwrite("User not in channel"),
+           io:fwrite("User not in channel\n"),
            {reply, failed, Users}
     end;
     
