@@ -29,41 +29,35 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 % Join a channel
 handle(St, {join, Channel}) ->
 
-    % Check if server is registered 
-    %case lists:member(St#client_st.server, registered()) of
 
-    case true of
-        % If server is registered, send a request to join it
-        true -> Result = (catch(genserver:request(St#client_st.server, {join, Channel, self(),St#client_st.nick}))),
-                case Result of 
-                    sucess -> {reply, ok, St};
-                    failed -> {reply, {error, user_already_joined, "User already in channel"}, St};
-                    {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
-                end;
-        % If server is not registered, reply with an error
-        false -> {reply, {error, server_not_reached, "Server does not respond"}, St}
-    end;
+    Result = (catch(genserver:request(St#client_st.server, {join, Channel, self(),St#client_st.nick}))),
+        case Result of 
+            sucess -> {reply, ok, St};
+            failed -> {reply, {error, user_already_joined, "User already in channel"}, St};
+            {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
+        end;
+        
     
 
 
 % Leave a channel
 handle(St, {leave, Channel}) ->     
     % Check if channel is registered/exists
-    ChannelExists = lists:member(list_to_atom(Channel), registered()),
+    % ChannelExists = lists:member(list_to_atom(Channel), registered()),
 
     % If channel is registered, send a request to leave it
-    if ChannelExists ->
-        Result = genserver:request(list_to_atom(Channel), {leave, self()}),
+    %if true ->
+        Result = (catch(genserver:request(list_to_atom(Channel), {leave, self()}))),
 
         case Result of 
             % Reply with ok if user can leave
             sucess -> {reply, ok, St};
             % Reply with error if user is not a member of the channel
-            failed -> {reply, {error, user_not_joined, "User not in channel"}, St}
+            failed -> {reply, {error, user_not_joined, "User not in channel"}, St};
+            {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
         end;
-        true ->
-            {reply, {error, user_not_joined, "User not in channel"}, St}
-    end;
+        %% {reply, {error, user_not_joined, "User not in channel"}, St}
+    %end;
 
 
 % Sending message (from GUI, to channel)
@@ -71,19 +65,15 @@ handle(St, {message_send, Channel, Msg}) ->
 
     % Check if channel is registered/exists
     % lists:member(list_to_atom(Channel), registered())
-    case true of
-    
-        % If channel is registered, send a request to it with a message
-        true -> Result = (catch (genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}))),
-                case Result of
-                    ok -> {reply, ok, St};
-                    failed -> {reply, {error, user_not_joined, "User not in Channel"}, St};
-                    {'EXIT',_} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
-                end;
+    % If channel is registered, send a request to it with a message
+     Result = (catch (genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}))),
+            case Result of
+            ok -> {reply, ok, St};
+            failed -> {reply, {error, user_not_joined, "User not in Channel"}, St};
+            {'EXIT',_} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
+        end;
 
-         % If channel is not registered, reply with error
-        false -> {reply, {error, server_not_reached, "Server does not respond"}, St}
-    end;
+    
 
 
 
