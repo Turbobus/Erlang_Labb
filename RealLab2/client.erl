@@ -18,7 +18,7 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
         server = ServerAtom
     }.
 
-% handle/2 handles each kind of request from GUI
+% handle/2 handles each kind of request from GUIs
 % Parameters:
 %   - the current state of the client (St)
 %   - request data from GUI
@@ -28,9 +28,9 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 
 % Join a channel
 handle(St, {join, Channel}) ->
-    
     % Send a request to server to join a given channel
     Result = (catch(genserver:request(St#client_st.server, {join, Channel, self(),St#client_st.nick}))),
+
     case Result of 
         % Reply with ok if user could join
         sucess -> {reply, ok, St};
@@ -43,9 +43,9 @@ handle(St, {join, Channel}) ->
 
 % Leave a channel
 handle(St, {leave, Channel}) ->     
-
     % Send a request to server to leave given channel
     Result = (catch(genserver:request(list_to_atom(Channel), {leave, self()}))),
+
     case Result of 
         % Reply with ok if user could leave
         sucess -> {reply, ok, St};
@@ -58,17 +58,17 @@ handle(St, {leave, Channel}) ->
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
-   
     % Send request to send a message
-     Result = (catch (genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}))),
-        case Result of
-            % Reply with ok if the server could send the message 
-            ok -> {reply, ok, St}; 
-            % Reply with failed if it could not
-            failed -> {reply, {error, user_not_joined, "User not in Channel"}, St}; 
-            % Catch exit if server does not respond to client
-            {'EXIT',_} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
-        end;
+    Result = (catch (genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}))),
+
+    case Result of
+        % Reply with ok if the server could send the message 
+        ok -> {reply, ok, St}; 
+        % Reply with failed if it could not
+        failed -> {reply, {error, user_not_joined, "User not in Channel"}, St}; 
+        % Catch exit if server does not respond to client
+        {'EXIT',_} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
+    end;
 
 
 % Change nick

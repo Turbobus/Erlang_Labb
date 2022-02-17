@@ -2,15 +2,15 @@
 -export([start/1,stop/1]).
 
 -record(inState,{
-    channels,
-    nicks
+    channels, % Pid to underlying channel procesors 
+    nicks     % All taken nicks for the whole server
 }).
 
 % The initial state of the server
 initial_state() ->
     #inState{
-        channels = [], % Pid to underlying channel procesors 
-        nicks = []     % All taken nicks for the whole server
+        channels = [], 
+        nicks = []    
     }.
 
 
@@ -25,7 +25,6 @@ start(ServerAtom) ->
 
 % Join a channel
 handle(St, {join, Channel, User, Nick}) ->
-
     % See if channel already exists
     ChannelInList = lists:member(Channel, St#inState.channels),   
 
@@ -45,7 +44,6 @@ handle(St, {join, Channel, User, Nick}) ->
 
 % Change nickname
 handle(St, {changeNick, NewNick, OldNick}) ->
-
     % See if the new nick is already taken
     AlreadyExist = lists:member(NewNick, St#inState.nicks),
 
@@ -57,7 +55,6 @@ handle(St, {changeNick, NewNick, OldNick}) ->
 
 % Stops all channel servers (If the masterserver quits)
 handle(St, stopAllChannels) ->
-
     % Send a stop command to each channelserver
     lists:foreach(fun(Channel) ->
                     genserver:stop(list_to_atom(Channel))
@@ -67,7 +64,6 @@ handle(St, stopAllChannels) ->
 
 % Client quits the user interface
 handle(St, {quitClient, User, UserNick})->
-    
     % Remove user from all channels (Will make client leave channels that it were in)
     lists:foreach(fun(Channel) ->
                     genserver:request(list_to_atom(Channel), {leave, User})
@@ -77,12 +73,10 @@ handle(St, {quitClient, User, UserNick})->
     NewNickList = [Nick || Nick <- St#inState.nicks, Nick /= UserNick],
     {reply, ok, St#inState{nicks = NewNickList}};
     
+
 % Failsafe to catch all other commands       
 handle(St, _) ->
     {reply, {error, not_implemented, "Not Working"}, St}.
-
-
-
 
 
 % Channel server functions
@@ -90,7 +84,6 @@ handle(St, _) ->
 
 % Join a channel
 channelHandler(Users, {join, User}) ->
-
     % See if user is already in the channel
     UserInChannel = lists:member(User, Users),
 
