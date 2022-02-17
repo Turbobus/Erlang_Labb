@@ -28,53 +28,47 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 
 % Join a channel
 handle(St, {join, Channel}) ->
-
-
-    Result = (catch(genserver:request(St#client_st.server, {join, Channel, self(),St#client_st.nick}))),
-        case Result of 
-            sucess -> {reply, ok, St};
-            failed -> {reply, {error, user_already_joined, "User already in channel"}, St};
-            {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
-        end;
-        
     
-
+    % Send a request to server to join a given channel
+    Result = (catch(genserver:request(St#client_st.server, {join, Channel, self(),St#client_st.nick}))),
+    case Result of 
+        % Reply with ok if user could join
+        sucess -> {reply, ok, St};
+        % Reply with error if user is already a member in channel
+        failed -> {reply, {error, user_already_joined, "User already in channel"}, St};
+        % If server did not repond, reply with error
+        {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
+    end;
+        
 
 % Leave a channel
 handle(St, {leave, Channel}) ->     
-    % Check if channel is registered/exists
-    % ChannelExists = lists:member(list_to_atom(Channel), registered()),
 
-    % If channel is registered, send a request to leave it
-    %if true ->
-        Result = (catch(genserver:request(list_to_atom(Channel), {leave, self()}))),
-
-        case Result of 
-            % Reply with ok if user can leave
-            sucess -> {reply, ok, St};
-            % Reply with error if user is not a member of the channel
-            failed -> {reply, {error, user_not_joined, "User not in channel"}, St};
-            {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
-        end;
-        %% {reply, {error, user_not_joined, "User not in channel"}, St}
-    %end;
+    % Send a request to server to leave given channel
+    Result = (catch(genserver:request(list_to_atom(Channel), {leave, self()}))),
+    case Result of 
+        % Reply with ok if user could leave
+        sucess -> {reply, ok, St};
+        % Reply with error if user is not a member of the channel
+        failed -> {reply, {error, user_not_joined, "User not in channel"}, St};
+        % If server did not repond, reply with error
+        {'EXIT', _} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
+    end;
 
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
-
-    % Check if channel is registered/exists
-    % lists:member(list_to_atom(Channel), registered())
-    % If channel is registered, send a request to it with a message
+   
+    % Send request to send a message
      Result = (catch (genserver:request(list_to_atom(Channel), {message_send, Channel, St#client_st.nick, Msg, self()}))),
-            case Result of
-            ok -> {reply, ok, St};
-            failed -> {reply, {error, user_not_joined, "User not in Channel"}, St};
+        case Result of
+            % Reply with ok if the server could send the message 
+            ok -> {reply, ok, St}; 
+            % Reply with failed if it could not
+            failed -> {reply, {error, user_not_joined, "User not in Channel"}, St}; 
+            % Catch exit if server does not respond to client
             {'EXIT',_} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
         end;
-
-    
-
 
 
 % Change nick
@@ -82,10 +76,12 @@ handle(St, {nick, NewNick}) ->
     % Send a request to the server to see if client can change to the new nick
     Result = (catch(genserver:request(St#client_st.server, {changeNick, NewNick, St#client_st.nick}))),
 
-    % If ok, update the nick. Otherise, reply with error
     case Result of
+        % Reply with ok if nick could be changed
         ok     -> {reply, ok, St#client_st{nick = NewNick}}; 
+        % Reply with failed if nick is already taken
         failed -> {reply,{error, nick_taken, "Nick is already taken"},St};
+        % If server did not repond, reply with error
         {'EXIT',_} -> {reply, {error, server_not_reached, "Server does not respond"}, St}
     end;
     

@@ -120,14 +120,12 @@ channelHandler(Users, {message_send, Channel, Nick ,Msg, User}) ->
     % Check if the user is a member of this channel
     case lists:member(User,Users) of
         % If the user is a member, send a request to all other users in the channel to receive the message
-        true -> lists:foreach(fun(To) ->
-                                spawn(fun() -> 
+        true -> spawn(fun() -> lists:foreach(fun(To) ->
                                 if To /= User ->
                                     genserver:request(To, {message_receive, Channel, Nick, Msg});
                                     true -> ok
                                 end
-                                end)
-                            end, Users),
+                            end, Users) end),
                             {reply, ok, Users};
 
         % If not a member. reply with failed
