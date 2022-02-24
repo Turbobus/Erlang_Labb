@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+
 /**
  * <code>ForkJoinSolver</code> implements a solver for
  * <code>Maze</code> objects using a fork/join multi-thread
@@ -139,4 +140,6 @@ public class ForkJoinSolver extends SequentialSolver {
         // all nodes explored, no goal found
         return null;
     }
+
+
 }
