@@ -19,9 +19,15 @@ import java.util.concurrent.ConcurrentSkipListSet;
  */
 
 
-public class ForkJoinSolver
-    extends SequentialSolver
-{
+public class ForkJoinSolver extends SequentialSolver {
+
+    private List<ForkJoinSolver> solvers = new ArrayList<>();
+    private static Set<Integer> visitedNodes = new ConcurrentSkipListSet<>();
+
+
+    private int player;
+    private static boolean goalFound = false;
+
     /**
      * Creates a solver that searches in <code>maze</code> from the
      * start node to a goal.
@@ -31,6 +37,8 @@ public class ForkJoinSolver
     public ForkJoinSolver(Maze maze)
     {
         super(maze);
+        //this.visitedNodes = new ConcurrentSkipListSet<>();
+        this.player = maze.newPlayer(start);
     }
 
     /**
@@ -49,6 +57,15 @@ public class ForkJoinSolver
         this(maze);
         this.forkAfter = forkAfter;
     }
+
+    private ForkJoinSolver(Maze maze, int newPlayer, int startNode, Set<Integer> visitedNodes){
+        super(maze);
+        this.player = newPlayer;
+        this.start = startNode;
+        //this.visited = visitedNodes;
+    }
+
+
 
     /**
      * Searches for and returns the path, as a list of node
@@ -69,9 +86,57 @@ public class ForkJoinSolver
 
     private List<Integer> parallelSearch() {
 
+        // one player active on the maze at start
+        //int player = maze.newPlayer(start);
+        // start with start node
+        frontier.push(start);
+        // as long as not all nodes have been processed
+        while (!frontier.empty() && !goalFound) {
+            // get the new node to process
+            int current = frontier.pop();
+            // if current node has a goal
+            if (maze.hasGoal(current)) {
+                // move player to goal
+                maze.move(player, current);
+                // search finished: reconstruct and return path
+                goalFound = true;
+                return pathFromTo(start, current);
+            }
+            // if current node has not been visited yet
+            if (!visitedNodes.contains(current)) {
+                // move player to current node
+                maze.move(player, current);
+                // mark node as visited
+                visitedNodes.add(current);
+                // for every node nb adjacent to current
+                for (int nb: maze.neighbors(current)) {
+                    // add nb to the nodes to be processed
+
+                    frontier.push(nb);
+                    // if nb has not been already visited,
+                    // nb can be reached from current (i.e., current is nb's predecessor)
+                    if (!visitedNodes.contains(nb)) {
+                        int newPlayer = maze.newPlayer(nb);
+                        ForkJoinSolver solver = new ForkJoinSolver(maze, newPlayer, nb, visitedNodes);
+                        solvers.add(solver);
+                        solver.fork();
+
+                        predecessor.put(nb, current);
+                    }
+                }
 
 
-
+            }
+            for (ForkJoinSolver solver : solvers){
+                List<Integer> path = solver.join();
+                if (path != null) {
+                    List<Integer> currentPath = pathFromTo(start, current);
+                    currentPath.addAll(path);
+                    return currentPath;
+                }
+            }
+        }
+        // all nodes explored, no goal found
         return null;
     }
 }
