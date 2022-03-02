@@ -22,8 +22,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 public class ForkJoinSolver extends SequentialSolver {
 
-    private List<ForkJoinSolver> solvers = new ArrayList<>();
-    private static Set<Integer> visitedNodes = new ConcurrentSkipListSet<>();
+    private final List<ForkJoinSolver> solvers = new ArrayList<>();
+    private static final Set<Integer> visitedNodes = new ConcurrentSkipListSet<>();
 
 
     private int player;
