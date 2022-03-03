@@ -145,13 +145,21 @@ public class ForkJoinSolver extends SequentialSolver {
             }
         }
 
+        // Loop joining all forks together
         for (ForkJoinSolver solver : solvers){
+            // Joins back a solver
             List<Integer> path = solver.join();
+
+            // If we got a path
             if (path != null) {
+                // Remove first position in path (Otherwise it will be duplicate)
                 int solverStartPos = path.remove(0);
+                // Create a path from this workers startPosition to the solver start position
                 List<Integer> currentPath = pathFromTo(start, solverStartPos);
 
+                // Add the solverpath and own path together
                 currentPath.addAll(path);
+                // Return this path
                 return currentPath;
             }
         }
