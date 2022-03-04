@@ -1,6 +1,8 @@
 package amazed;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 
 import amazed.maze.Amazed;
 
@@ -63,8 +65,9 @@ public class Main
             printUsageAndExit();
     }
 
+
     public static void main(String[] args)
-    throws InterruptedException
+            throws InterruptedException
     {
         parseArguments(args);
         Amazed amazed = new Amazed(map, sequential, forkAfter, period);
@@ -76,4 +79,58 @@ public class Main
         Thread.sleep(1000);
         amazed.showSolution();
     }
+
+
+    // Main method used for testing the processing times
+    /*
+    public static void main(String[] args)
+    throws InterruptedException
+    {
+        parseArguments(args);
+        Amazed amazed = new Amazed(map, sequential, forkAfter, period);
+        List<Long> holder = new ArrayList();
+        long sum = 0;
+        long highest = -1;
+        long lowest = 10000;
+
+        for (int i = 0; i < 1000; i++) {
+
+
+            long start = System.nanoTime(); //System.currentTimeMillis();
+            amazed.solve();
+            long stop = System.nanoTime(); //System.currentTimeMillis();
+            long elapsed = stop - start;
+            if(i > 200){
+                holder.add(elapsed);
+                if(elapsed > highest){
+                    highest = elapsed;
+                }
+                if(elapsed < lowest){
+                    lowest = elapsed;
+                }
+            }
+
+            //System.out.println("Solving time: " + elapsed + " ms");
+            //Thread.sleep(1000);
+            //amazed.showSolution();
+
+        }
+
+
+
+        for(int i = 0; i < holder.size(); i++) {
+            sum += holder.get(i);
+        }
+
+        // find the average value
+        long avg = sum/holder.size();
+        System.out.println("The average is: " + (double)avg/1000000 + " ms");
+        System.out.println("The highest is: " + (double)highest/1000000 + " ms");
+        System.out.println("The lowest is: " + (double)lowest/1000000 + " ms");
+
+
+    }
+    */
+
+
 }
