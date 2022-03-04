@@ -22,11 +22,14 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 public class ForkJoinSolver extends SequentialSolver {
 
+    // List of workers
     private final List<ForkJoinSolver> solvers = new ArrayList<>();
+    // List of nodes visited
     private static final Set<Integer> visitedNodes = new ConcurrentSkipListSet<>();
 
-
+    // Current player
     private int player;
+    // Keep track if goal is found
     private static boolean goalFound = false;
 
     /**
@@ -58,6 +61,7 @@ public class ForkJoinSolver extends SequentialSolver {
         this.forkAfter = forkAfter;
     }
 
+    // Method to create a new instance using forkAfter value
     private ForkJoinSolver(Maze maze,int newPlayer, int startNode, int forkAfter)
     {
         super(maze);
@@ -66,6 +70,7 @@ public class ForkJoinSolver extends SequentialSolver {
         this.start = startNode;
     }
 
+    // Method to create a new instance not using forkAfter value
     private ForkJoinSolver(Maze maze, int newPlayer, int startNode){
         super(maze);
         this.player = newPlayer;
@@ -91,6 +96,7 @@ public class ForkJoinSolver extends SequentialSolver {
         return parallelSearch();
     }
 
+    // Our solution to the lab
     private List<Integer> parallelSearch() {
 
         // start with start node
@@ -167,10 +173,11 @@ public class ForkJoinSolver extends SequentialSolver {
         return null;
     }
 
-    /*
-    private List<Integer> parallelSearchWait() {
+    // Version of our solution but the spawn process
+    // waits for its children
+    private List<Integer> parallelSearchWaitForChildren() {
 
-        // start with start node
+        /// start with start node
         frontier.push(start);
         // mark the start node as visited
         visitedNodes.add(start);
@@ -188,28 +195,26 @@ public class ForkJoinSolver extends SequentialSolver {
                 return pathFromTo(start, current);
             }
 
-
             // convert set of neighbors into a list
             List<Integer> nbs = new ArrayList<>(maze.neighbors(current));
             // boolean to make sure we only skip once
-
+            boolean skipped = false;
             //move player to the current node
             maze.move(player, current);
 
             // for every neighbor
             for(int i = 0; i < nbs.size(); i++){
                 int nb = nbs.get(i);
-
-
                 // if neighbour was not visited, we add it as visited and continue
-                if(visitedNodes.add(nb)) {
-                    if(nbs.size() == 2){
+                if(visitedNodes.add(nb)){
+                    // we push one neighbour to the frontier for the spawning process to
+                    // continue working on
+                    if(!skipped){
                         frontier.push(nb);
+                        skipped = true;
                     }
-                    else{
-                        // we push one neighbour to the frontier for the spawning process to
-                        // continue working on
-                        //All other neighbors will be processed by new threads
+                    //All other neighbors will be processed by new threads
+                    else {
                         //create a new player to for the neighbor node
                         int newPlayer = maze.newPlayer(nb);
                         ForkJoinSolver solver = new ForkJoinSolver(maze, newPlayer, nb);
@@ -217,16 +222,13 @@ public class ForkJoinSolver extends SequentialSolver {
                         solvers.add(solver);
                         // fork the solver into new workers
                         solver.fork();
-                        // Keeps track of what node came before the other
-
                     }
+                    // Keeps track of what node came before the other
                     predecessor.put(nb, current);
-
                 }
-
             }
-
-            // Loop joining all forks together
+            // Loop joining all current forks together
+            // Having this here makes the solver wait for its children
             for (ForkJoinSolver solver : solvers){
                 // Joins back a solver
                 List<Integer> path = solver.join();
@@ -251,8 +253,7 @@ public class ForkJoinSolver extends SequentialSolver {
         return null;
     }
 
-     */
-
+    // A solution implementing the forkAfter value
     private List<Integer> parallelSearchForkAfter() {
 
         // start with start node
@@ -282,7 +283,9 @@ public class ForkJoinSolver extends SequentialSolver {
 
             // loop through each neighbor
             for (int nb: maze.neighbors(current)) {
+                // add unvisited neighbors to the visited list
                 if(visitedNodes.add(nb)) {
+                    // If it is time to fork
                     if (counter == 0) {
                         //create a new player for the neighbor node
                         int newPlayer = maze.newPlayer(nb);
@@ -292,12 +295,15 @@ public class ForkJoinSolver extends SequentialSolver {
                         solver.fork();
 
                     } else {
+                        //if we dont fork, we push up neighbor to frontier
                         frontier.push(nb);
                     }
+                    // Keeps track of what node came before the other
                     predecessor.put(nb, current);
                 }
             }
 
+            // if counter is 0, reset it
             if(counter == 0){
                 counter = forkAfter;
             }
@@ -315,12 +321,7 @@ public class ForkJoinSolver extends SequentialSolver {
                 }
             }
 
-
-
-
         }
-
-
 
         // all nodes explored, no goal found
         return null;
