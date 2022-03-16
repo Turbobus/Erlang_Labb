@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -30,7 +31,7 @@ public class ForkJoinSolver extends SequentialSolver {
     // Current player
     private int player;
     // Keep track if goal is found
-    private static boolean goalFound = false;
+    private static AtomicBoolean goalFound = new AtomicBoolean(false);
 
     /**
      * Creates a solver that searches in <code>maze</code> from the
@@ -104,7 +105,7 @@ public class ForkJoinSolver extends SequentialSolver {
         // mark the start node as visited
         visitedNodes.add(start);
         // as long as not all nodes have been processed and the goal has not been found
-        while (!frontier.empty() && !goalFound) {
+        while (!frontier.empty() && !goalFound.get()) {
 
             // get the new node to process
             int current = frontier.pop();
@@ -113,7 +114,7 @@ public class ForkJoinSolver extends SequentialSolver {
                 // move player to goal
                 maze.move(player, current);
                 // search finished: reconstruct and return path
-                goalFound = true;
+                goalFound.set(true);
                 return pathFromTo(start, current);
             }
 
@@ -182,7 +183,7 @@ public class ForkJoinSolver extends SequentialSolver {
         // mark the start node as visited
         visitedNodes.add(start);
         // as long as not all nodes have been processed and the goal has not been found
-        while (!frontier.empty() && !goalFound) {
+        while (!frontier.empty() && !goalFound.get()) {
 
             // get the new node to process
             int current = frontier.pop();
@@ -191,7 +192,7 @@ public class ForkJoinSolver extends SequentialSolver {
                 // move player to goal
                 maze.move(player, current);
                 // search finished: reconstruct and return path
-                goalFound = true;
+                goalFound.set(true);
                 return pathFromTo(start, current);
             }
 
@@ -264,7 +265,7 @@ public class ForkJoinSolver extends SequentialSolver {
         // initialize the counter using forkAfter
         int counter = forkAfter + 1;
         // as long as not all nodes have been processed and the goal has not been found
-        while (!frontier.empty() && !goalFound) {
+        while (!frontier.empty() && !goalFound.get()) {
 
             // get the new node to process
             int current = frontier.pop();
@@ -273,7 +274,7 @@ public class ForkJoinSolver extends SequentialSolver {
                 // move player to goal
                 maze.move(player, current);
                 // search finished: reconstruct and return path
-                goalFound = true;
+                goalFound.set(true);
                 return pathFromTo(start, current);
             }
 
